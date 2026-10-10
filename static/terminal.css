@@ -1,0 +1,21 @@
+html, body.term-page { height: 100%; }
+body.term-page { display: flex; flex-direction: column; background: #0d1117; color: #e6e8eb; overflow: hidden; }
+.term-bar { display: flex; align-items: center; gap: 10px; padding: 7px 12px; background: #161b22;
+            border-bottom: 1px solid #2c333c; font-size: 13px; flex: none; }
+.term-bar .muted { color: #9aa3ae; }
+.term-bar button { background: #21262d; border-color: #30363d; color: #e6e8eb; }
+#term { flex: 1; min-height: 0; padding: 6px 0 0 8px; }
+#term .xterm { height: 100%; }
+.term-missing { padding: 24px; color: #fca5a5; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; z-index: 10; }
+.prompt-card { background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 12px;
+               padding: 18px 20px; width: min(520px, 100%); }
+.prompt-card h3 { margin: 0 0 10px; font-size: 16px; }
+.prompt-card p { margin: 0 0 10px; font-size: 13.5px; }
+.prompt-card .fp { font-family: "Cascadia Mono", "DejaVu Sans Mono", Consolas, Menlo, monospace; font-size: 13px;
+                   background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px;
+                   word-break: break-all; margin: 4px 0 10px; }
+.prompt-card .fp.old { text-decoration: line-through; opacity: .7; }
+.prompt-card .danger-title { color: var(--danger); }
+button.danger-fill { background: var(--danger); border-color: var(--danger); color: #fff; }

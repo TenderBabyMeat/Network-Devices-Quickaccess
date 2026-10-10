@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5 1.5 7v7.5h13V7z' fill='%232563eb'/%3E%3Ccircle cx='5.5' cy='10.5' r='1.3' fill='%2322c55e'/%3E%3Ccircle cx='8' cy='10.5' r='1.3' fill='white'/%3E%3Ccircle cx='10.5' cy='10.5' r='1.3' fill='white'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css?v=__VERSION__">
+</head>
+<body>
+
+<header>
+  <h1 id="pageTitle">__TITLE__</h1>
+  <span class="summary" id="summary"></span>
+  <input type="search" id="search" placeholder="Search name, IP, model, tag…" aria-label="Search devices">
+  <select id="sortSel" class="sort-select" aria-label="Sort devices">
+    <option value="">Saved order</option>
+    <option value="hostname:1">Name A–Z</option>
+    <option value="hostname:-1">Name Z–A</option>
+    <option value="ip:1">IP low–high</option>
+    <option value="ip:-1">IP high–low</option>
+    <option value="model:1">Type / model</option>
+    <option value="status:1">Problems first</option>
+    <option value="status:-1">Healthy first</option>
+  </select>
+  <span class="spacer"></span>
+  <button id="btnScan" title="Find devices on a network">Scan</button>
+  <button class="primary" id="btnAddSite">+ Add location</button>
+  <details class="menu" id="menu">
+    <summary class="btn" aria-label="More">⋯</summary>
+    <div class="menu-list">
+      <button data-menu="scan">Scan network…</button>
+      <button data-menu="refresh">Check status now</button>
+      <hr>
+      <button data-menu="export">Export (JSON)</button>
+      <button data-menu="import">Import…</button>
+      <button data-menu="backups">Automatic backups…</button>
+      <hr>
+      <button data-menu="settings">Settings…</button>
+      <button data-menu="putty">PuTTY buttons: set up this PC…</button>
+      <button data-menu="password">Change password…</button>
+      <button data-menu="logout">Log out</button>
+    </div>
+  </details>
+  <input type="file" id="importFile" accept=".json,application/json" hidden>
+</header>
+
+<main>
+  <div class="filters" id="filters" hidden></div>
+  <div id="sites"><div class="empty">Loading…</div></div>
+</main>
+
+<!-- Status details popover -->
+<div class="pop" id="pop" role="tooltip" hidden></div>
+
+<!-- Device editor -->
+<dialog id="devDlg" class="wide">
+  <form method="dialog" id="devForm">
+    <h3 id="devTitle">Add device</h3>
+    <div class="grid">
+      <div><label for="fHost">Name *</label><input id="fHost" required autocomplete="off" placeholder="e.g. proxmox"></div>
+      <div><label for="fIp">IP address or DNS name *</label><input id="fIp" class="mono" required autocomplete="off" placeholder="192.168.1.10"></div>
+      <div><label for="fType">Type</label><select id="fType"></select></div>
+      <div><label for="fSite">Location</label><select id="fSite"></select></div>
+      <div><label for="fModel">Model / OS</label><input id="fModel" autocomplete="off" placeholder="e.g. Debian 12, Pi 4, UDM-SE"></div>
+      <div><label for="fTags">Tags</label><input id="fTags" autocomplete="off" placeholder="comma separated, e.g. media, critical"></div>
+
+      <fieldset class="full">
+        <legend>Web</legend>
+        <label for="fWeb">Web UI address</label>
+        <input id="fWeb" class="mono" placeholder="(no Web UI button)" autocomplete="off">
+        <div class="hint">e.g. <span class="mono">https://{ip}:8006</span> - <span class="mono">{ip}</span> is replaced with the IP. Leave blank if it has no web page.</div>
+        <div id="linkRows"></div>
+        <button type="button" class="small" id="btnAddLink" style="margin-top:8px">+ Add another link</button>
+      </fieldset>
+
+      <fieldset class="full">
+        <legend><label class="check legend-check"><input type="checkbox" id="fSshOn"> SSH</label></legend>
+        <div id="sshFields">
+          <div class="grid3">
+            <div><label for="fSshHost">Host</label><input id="fSshHost" class="mono" placeholder="(same as IP)" autocomplete="off"></div>
+            <div><label for="fSshUser">Username</label><input id="fSshUser" placeholder="(ask when connecting)" autocomplete="off"></div>
+            <div><label for="fSshPort">Port</label><input id="fSshPort" type="number" min="1" max="65535" placeholder="22"></div>
+          </div>
+          <div style="margin-top:10px">
+            <label for="fPutty">Saved PuTTY session (optional)</label>
+            <input id="fPutty" autocomplete="off" placeholder="e.g. My Server">
+            <div class="hint">If set, the PuTTY button loads this saved session. Web SSH always uses host / user / port.</div>
+          </div>
+          <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center">
+            <label class="check"><input type="checkbox" id="fLegacy"> Allow legacy SSH algorithms (older routers, NAS boxes, embedded gear)</label>
+            <button type="button" class="small" id="btnForgetKey" hidden>Forget saved host key</button>
+          </div>
+        </div>
+        <div class="hint" id="sshOffHint">No SSH buttons for this device. Tick SSH to add PuTTY and Web SSH.</div>
+      </fieldset>
+
+      <fieldset class="full">
+        <legend>Status checks</legend>
+        <label class="check"><input type="checkbox" id="fChkPing" checked> Ping</label>
+        <label class="check"><input type="checkbox" id="fChkSsh" checked> SSH port</label>
+        <label class="check"><input type="checkbox" id="fChkWeb" checked> Web UI</label>
+        <div class="hint">Green = everything ticked answers, amber = some, red = nothing. Untick all to stop monitoring.</div>
+      </fieldset>
+
+      <div class="full"><label for="fNotes">Notes</label><input id="fNotes" autocomplete="off"></div>
+    </div>
+    <div class="msg" id="devMsg"></div>
+    <div class="dlg-actions">
+      <button type="button" id="devCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Location editor -->
+<dialog id="siteDlg">
+  <form method="dialog" id="siteForm">
+    <h3 id="siteTitle">Add location</h3>
+    <label for="fSiteName">Name *</label>
+    <input id="fSiteName" required autocomplete="off" placeholder="e.g. Home, Mom's house">
+    <div class="hint">A household or network you look after. Devices are grouped by location.</div>
+    <div class="dlg-actions">
+      <button type="button" id="siteCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Network scan -->
+<dialog id="scanDlg" class="xwide">
+  <div class="body">
+    <h3>Scan a network</h3>
+    <form id="scanForm" class="scan-bar">
+      <input id="scanCidr" class="mono" autocomplete="off" placeholder="192.168.1.0/24" aria-label="Address range">
+      <button type="submit" class="primary" id="scanGo">Scan</button>
+      <button type="button" id="scanStop" hidden>Stop</button>
+      <span class="hint" id="scanState"></span>
+    </form>
+    <div class="hint">Checks every address for ping and common homelab ports (SSH, web, Proxmox, Home Assistant, NAS, Plex, printers…).
+      Private ranges only, up to 1024 addresses. Takes about 20-40 seconds for a /24.</div>
+    <div class="progress" id="scanProgress" hidden><div id="scanBar"></div></div>
+    <div id="scanResults"></div>
+    <div class="dlg-actions">
+      <label class="check left"><input type="checkbox" id="scanShowKnown"> Show devices already added</label>
+      <label for="scanSite" class="inline-label">Add to</label><select id="scanSite" class="auto"></select>
+      <button type="button" id="scanClose">Close</button>
+      <button type="button" class="primary" id="scanAdd" disabled>Add selected</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Backups -->
+<dialog id="bkDlg">
+  <div class="body">
+    <h3>Automatic backups</h3>
+    <p class="hint" style="margin-top:0">A full JSON backup is written every day and the newest 14 are kept, in
+      <span class="mono" id="bkFolder">data/backups</span> on the Docker host. Restore one with ⋯ → Import.</p>
+    <div id="bkList" class="bk-list"></div>
+    <div class="dlg-actions">
+      <button type="button" id="bkNow">Back up now</button>
+      <button type="button" class="primary" id="bkClose">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="setDlg">
+  <form method="dialog" id="setForm">
+    <h3>Settings</h3>
+    <label for="fTitle">Page title</label>
+    <input id="fTitle" maxlength="60" autocomplete="off" placeholder="Homelab">
+    <div class="msg" id="setMsg"></div>
+    <div class="dlg-actions">
+      <button type="button" id="setCancel">Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Change password -->
+<dialog id="pwDlg">
+  <form method="dialog" id="pwForm">
+    <h3>Change password</h3>
+    <label for="pwCur">Current password</label><input id="pwCur" type="password" autocomplete="current-password" required>
+    <label for="pwNew" style="margin-top:10px">New password (8+ characters)</label><input id="pwNew" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="pwNew2" style="margin-top:10px">Repeat new password</label><input id="pwNew2" type="password" autocomplete="new-password" minlength="8" required>
+    <div class="msg" id="pwMsg"></div>
+    <div class="dlg-actions">
+      <button type="button" id="pwCancel">Cancel</button>
+      <button type="submit" class="primary">Change</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- PuTTY helper -->
+<dialog id="puttyDlg">
+  <div class="body">
+    <h3>PuTTY buttons on this PC</h3>
+    <p style="margin-top:0">Browsers can't start programs by themselves, so each Linux PC where you want the
+      <b>PuTTY</b> buttons needs a small link handler, installed once. <b>Web SSH</b> needs nothing.</p>
+    <ol style="padding-left:20px; margin:0 0 12px">
+      <li><a href="/client/netdevices-putty-linux.tar.gz" download>Download the PuTTY link handler for Linux</a></li>
+      <li>Extract it and run the installer (no sudo needed):
+        <pre class="code">tar xzf netdevices-putty-linux.tar.gz
+netdevices-putty/install.sh</pre></li>
+      <li>The first time you click PuTTY, the browser asks which app to use: pick <b>PuTTY link handler (NetDevices)</b>, not plain “PuTTY”, and tick “Always”.</li>
+    </ol>
+    <p class="hint">PuTTY opens but doesn't load the session? Run
+      <span class="mono">~/.local/share/netdevices/putty-handler.sh --watch</span>, then click a PuTTY button.</p>
+    <div class="dlg-actions"><button type="button" class="primary" id="puttyClose">Close</button></div>
+  </div>
+</dialog>
+
+<div id="toast" role="status"></div>
+<div class="ver" id="ver" data-version="__VERSION__">NetDevices v__VERSION__</div>
+<script src="/static/app.js?v=__VERSION__"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+data/
+ssh-keys/
+.env
+*.zip
+**/__pycache__
+.git

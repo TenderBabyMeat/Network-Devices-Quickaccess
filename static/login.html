@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in · __TITLE__</title>
+<link rel="stylesheet" href="/static/app.css?v=__VERSION__">
+</head>
+<body>
+<div class="auth-wrap">
+  <form class="auth-card" id="loginForm" data-mode="login">
+    <h1>__TITLE__</h1>
+    <p>Log in to continue.</p>
+    <div class="field">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required autofocus>
+    </div>
+    <button type="submit" class="primary">Log in</button>
+    <div class="msg" id="msg"></div>
+    <p class="hint" style="margin:10px 0 0">Forgot it? On the Docker host run<br><span class="mono">docker compose exec netdevices python -m app.resetpw</span></p>
+  </form>
+</div>
+<div class="ver">NetDevices v__VERSION__</div>
+<script src="/static/auth.js?v=__VERSION__"></script>
+</body>
+</html>

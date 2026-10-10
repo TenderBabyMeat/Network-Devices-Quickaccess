@@ -1,0 +1,7 @@
+# your install - never commit these
+.env
+data/
+ssh-keys/
+*.zip
+__pycache__/
+*.pyc

@@ -1,0 +1,27 @@
+# Settings come from .env (written by ./setup.sh). Edit .env, then: docker compose up -d
+name: netdevices
+services:
+  netdevices:
+    build: .
+    image: netdevices:local
+    container_name: netdevices
+    restart: unless-stopped
+    user: "${ND_UID:-1000}:${ND_GID:-1000}"
+    ports:
+      - "${ND_BIND:-0.0.0.0}:${ND_PORT:-8088}:8080"
+    volumes:
+      - "${ND_DATA_PATH:-./data}:/data"
+      - "${ND_KEYS_PATH:-./ssh-keys}:/ssh:ro"
+    environment:
+      ND_STATUS_INTERVAL: "${ND_STATUS_INTERVAL:-30}"
+      ND_STATUS_TIMEOUT: "${ND_STATUS_TIMEOUT:-2}"
+      ND_COOKIE_SECURE: "${ND_COOKIE_SECURE:-0}"
+      FORWARDED_ALLOW_IPS: "${ND_TRUSTED_PROXY:-127.0.0.1}"
+    # Lets the non-root app send ping without any extra privileges.
+    sysctls:
+      net.ipv4.ping_group_range: "0 2147483647"
+    # Hardening: no Linux capabilities, read-only image, no privilege escalation.
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    read_only: true
+    tmpfs: [/tmp]
