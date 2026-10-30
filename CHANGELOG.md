@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.2
+- Fixed startup inside an unprivileged LXC (e.g. Docker in a Proxmox container): the ping permission now covers only the app's own group, which LXCs accept.
+
 ## 1.1.1
 - The ▾ "more links" menu now opens above the list instead of being cut off by the table.
 - Scan dialog layout tidy-up.

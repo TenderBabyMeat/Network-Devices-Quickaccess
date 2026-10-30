@@ -17,9 +17,10 @@ services:
       ND_STATUS_TIMEOUT: "${ND_STATUS_TIMEOUT:-2}"
       ND_COOKIE_SECURE: "${ND_COOKIE_SECURE:-0}"
       FORWARDED_ALLOW_IPS: "${ND_TRUSTED_PROXY:-127.0.0.1}"
-    # Lets the non-root app send ping without any extra privileges.
+    # Lets the app's own group send ping without extra privileges. Only that one group is
+    # allowed: unprivileged LXCs (e.g. Docker inside a Proxmox container) reject wider ranges.
     sysctls:
-      net.ipv4.ping_group_range: "0 2147483647"
+      net.ipv4.ping_group_range: "${ND_GID:-1000} ${ND_GID:-1000}"
     # Hardening: no Linux capabilities, read-only image, no privilege escalation.
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
